@@ -142,6 +142,7 @@ targets = M.fromList
   [ ("js", P.JS)
   , ("sourcemaps", P.JSSourceMap)
   , ("corefn", P.CoreFn)
+  , ("blc", P.BLC)
   ]
 
 targetsMessage :: String

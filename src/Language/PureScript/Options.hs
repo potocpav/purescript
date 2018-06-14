@@ -18,5 +18,5 @@ data Options = Options
 defaultOptions :: Options
 defaultOptions = Options False False (S.singleton JS)
 
-data CodegenTarget = JS | JSSourceMap | CoreFn
+data CodegenTarget = JS | JSSourceMap | CoreFn | BLC
   deriving (Eq, Ord, Show)

@@ -35,6 +35,8 @@ import           Language.PureScript.AST
 import qualified Language.PureScript.Bundle as Bundle
 import qualified Language.PureScript.CodeGen.JS as J
 import           Language.PureScript.CodeGen.JS.Printer
+import           Language.PureScript.CodeGen.BLC as BLC
+import           Language.PureScript.CodeGen.BLC.Printer
 import qualified Language.PureScript.CoreFn as CF
 import qualified Language.PureScript.CoreFn.ToJSON as CFJ
 import qualified Language.PureScript.CoreImp.AST as Imp
@@ -132,6 +134,7 @@ buildMakeActions outputDir filePathMap foreigns usePrefix =
     JS -> outputFilename mn "index.js"
     JSSourceMap -> outputFilename mn "index.js.map"
     CoreFn -> outputFilename mn "corefn.json"
+    BLC -> outputFilename mn "index.Blc"
 
   getOutputTimestamp :: ModuleName -> Make (Maybe UTCTime)
   getOutputTimestamp mn = do
@@ -179,6 +182,10 @@ buildMakeActions outputDir filePathMap foreigns usePrefix =
         writeTextFile jsFile (B.fromStrict $ TE.encodeUtf8 $ js <> mapRef)
         for_ (mn `M.lookup` foreigns) (readTextFile >=> writeTextFile foreignFile)
         when sourceMaps $ genSourceMap dir mapFile (length prefix) mappings
+    when (S.member BLC codegenTargets) $ do
+      let blcFile = targetFilename mn BLC
+      blc <- BLC.moduleToBlc m Nothing
+      lift $ writeTextFile blcFile (B.fromStrict $ TE.encodeUtf8 $ prettyPrintBLC blc)
 
   genSourceMap :: String -> String -> Int -> [SMap] -> Make ()
   genSourceMap dir mapFile extraLines mappings = do
