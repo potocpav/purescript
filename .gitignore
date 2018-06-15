@@ -14,7 +14,6 @@ bower_components/
 node_modules
 tmp/
 .stack-work/
-output
 tests/purs/docs/docs/
 core-tests/full-core-docs.md
 tests/support/package-lock.json
@@ -28,3 +27,8 @@ purescript.cabal
 *.prof
 *.ps
 *.svg
+
+# Blc compilation artifacts
+*.lc
+*.blc
+*.Blc

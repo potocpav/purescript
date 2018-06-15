@@ -1,0 +1,15 @@
+// Primitive data
+#define T (\x \y x)
+#define F (\x \y y)
+#define nil F
+#define C (\x \y \p p x y)
+
+// Exports
+#define Prim__T T
+#define Prim__F F
+#define Prim__nil nil
+#define Prim__C C
+
+#define Prim__b0 (\t \f t)
+#define Prim__b1 (\t \f f)
+#define Prim__B (\a \b \c \d \e \f \g \h (C a (C b (C c (C d (C e (C f (C g (C h nil)))))))))
