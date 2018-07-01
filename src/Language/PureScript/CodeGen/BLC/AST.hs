@@ -11,10 +11,13 @@ data AST
   = Abs Text AST
   | App AST AST
   | Var Text
+  | If AST AST AST -- ^ If cond true_case false_case
+  | StringEq AST AST
   | StringLiteral Text
   | NumericLiteral (Either Integer Double)
   | BooleanLiteral Bool
   | ArrayLiteral [AST]
+  | Undefined
   | Unimpl Text
 
 data BLC

@@ -52,13 +52,14 @@ moduleToBlc (Module _ coms mn _ imps exps foreigns decls) foreign_ =
     return $ AST.Definition (identToBlc ident) body
 
   bindToBlc :: AST -> Bind Ann -> m AST
-  bindToBlc body (NonRec ann ident val) = nonRecToBlc ann ident val body
+  bindToBlc body (NonRec _ ident val) = do
+      val' <- valueToBlc val
+      nonRecToBlc ident val' body
   bindToBlc _ (Rec _) = undefined
 
-  nonRecToBlc :: Ann -> Ident -> Expr Ann -> AST -> m AST
-  nonRecToBlc _ ident val body = do
-    val' <- valueToBlc val
-    return $ AST.App (AST.Abs (identToBlc ident) body) val'
+  nonRecToBlc :: Ident -> AST -> AST -> m AST
+  nonRecToBlc ident val body =
+    return $ AST.App (AST.Abs (identToBlc ident) body) val
 
   identToBlc :: Ident -> Text
   identToBlc (Ident name) = name
@@ -82,8 +83,9 @@ moduleToBlc (Module _ coms mn _ imps exps foreigns decls) foreign_ =
     return $ AST.App e1 e2
   valueToBlc (Var _ var) =
     return $ varToBlc var
-  valueToBlc c@(Case _ _ _) =
-    return $ AST.Unimpl $ T.pack $ show c
+  valueToBlc c@(Case _ values binders) = do
+    vals <- mapM valueToBlc values
+    bindersToBlc binders vals
   valueToBlc (Let _ ds val) = do
     body <- valueToBlc val
     ds' <- foldlM bindToBlc body ds
@@ -100,6 +102,41 @@ moduleToBlc (Module _ coms mn _ imps exps foreigns decls) foreign_ =
   varToBlc (Qualified Nothing ident) = AST.Var $ identToBlc ident
   varToBlc (Qualified (Just mn) ident) = AST.Var $
     moduleNameToText mn <> "__" <> identToBlc ident
+
+  bindersToBlc :: [CaseAlternative Ann] -> [AST] -> m AST
+  bindersToBlc alternatives vals = do
+    blcs <- foldlM (\next (CaseAlternative binders result) -> do
+          ret <- guardsToBlc result
+          go vals ret binders next
+      ) AST.Undefined alternatives
+    return blcs
+    where
+
+    go :: [AST] -> AST -> [Binder Ann] -> AST -> m AST
+    go _ done [] next = return done -- TODO: is this correct?
+    go (v:vs) done' (b:bs) next = do
+      done'' <- go vs done' bs next
+      binderToJs v done'' next b
+    go _ _ _ _ = internalError "Invalid arguments to bindersToJs"
+
+  binderToJs :: AST -> AST -> AST -> Binder Ann -> m AST
+  binderToJs bind body next NullBinder{} = return body
+  binderToJs bind body next (LiteralBinder _ l) = literalToBinderBlc bind body next l
+  binderToJs bind body next (VarBinder _ ident) = nonRecToBlc ident bind body
+  binderToJs bind body next ConstructorBinder{} = undefined
+  binderToJs bind body next (NamedBinder _ ident binder) = do
+      js <- binderToJs bind body next binder
+      nonRecToBlc ident bind js
+
+  literalToBinderBlc :: AST -> AST -> AST -> Literal (Binder Ann) -> m AST
+  literalToBinderBlc bind body next (StringLiteral s) = do
+      let sl = AST.StringLiteral (fromJust $ decodeString s)
+      return $ AST.If (AST.StringEq sl bind) body next
+  literalToBinderBlc bind body next _ = undefined
+
+  guardsToBlc :: Either [(Guard Ann, Expr Ann)] (Expr Ann) -> m AST
+  guardsToBlc (Left gs) = undefined
+  guardsToBlc (Right v) = valueToBlc v
 
   moduleNameToText :: ModuleName -> Text
   moduleNameToText (ModuleName mn) = T.intercalate "__" (runProperName <$> mn)

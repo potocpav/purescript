@@ -1,13 +1,12 @@
 module Main where
 
-import Prelude
+-- import Prelude
 
 -- foreign import data Unit :: Type
 -- foreign import unit :: Unit
 -- foreign import log :: String -> Unit
 
 main :: String -> String
-main _ = let
-  h = "H"
-  e = "e"
-  in e
+main s = case s of
+    "0" -> "0"
+    _ -> "1"

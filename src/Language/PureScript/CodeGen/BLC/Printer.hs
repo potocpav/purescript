@@ -29,11 +29,14 @@ printAST :: AST -> Text
 printAST (Abs var ast) = parens $ T.concat ["\\", var, " ", printAST ast]
 printAST (App a b) = parens $ T.intercalate " " [printAST a, printAST b]
 printAST (Var v) = v
+printAST (If cond t f) = parens $ T.intercalate " " [printAST cond, printAST t, printAST f]
+printAST (StringEq s1 s2) = parens $ T.intercalate " " ["Prim__StringEq", printAST s1, printAST s2]
 printAST (StringLiteral v) = printText v
 printAST (NumericLiteral v) = parens $ T.concat ["NumericLiteral ", T.pack $ show v]
 printAST (BooleanLiteral v) = if v then "Prim__T" else "Prim__F"
 printAST (ArrayLiteral vs) = printArray printAST vs
 printAST (Unimpl text) = text
+printAST Undefined = "(\\a a)"
 
 printImport :: Import -> Text
 printImport (Import t) = "#include <" <> t <> "/index.lam>\n"
